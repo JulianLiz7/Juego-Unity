@@ -1,62 +1,101 @@
 using UnityEngine;
 
-public class PlayerMovement : MonoBehaviour
+[RequireComponent(typeof(CharacterController))]
+public class PlayerController : MonoBehaviour
 {
-    public float speed = 5f;            // Velocidad de movimiento
-    public float rotationSpeed = 10f;   // Suavidad de giro
-    public float jumpHeight = 2f;       // Altura del salto
-    public float gravity = -9.81f;      // Gravedad personalizada
-    public Transform cameraTransform;   // Referencia a la cámara
+    [Header("Movimiento")]
+    public float walkSpeed = 4f;
+    public float sprintSpeed = 6f;
+    public float jumpHeight = 2f;
+    public float gravity = -20f;
+    public float rotationSpeed = 10f;
+    public float mouseSensitivity = 1f;
+
+    [Header("Referencias")]
+    public Transform cameraTransform;
+    public Animator animator;
 
     private CharacterController controller;
-    private float turnSmoothVelocity;
-    private Vector3 velocity;           // Controla la velocidad vertical
-    private bool isGrounded;
+    private Vector3 velocity;
+    private float currentSpeed;
+    private float yaw;
+
+    public bool IsGrounded { get; private set; }
+    public bool IsMoving { get; private set; }
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
+        Cursor.lockState = CursorLockMode.Locked;
 
-        // Si no se asigna cámara, usa la principal
         if (cameraTransform == null)
             cameraTransform = Camera.main.transform;
     }
 
     void Update()
     {
-        // Detectar si está en el suelo
-        isGrounded = controller.isGrounded;
+        HandleMovement();
+        HandleRotation();
+        UpdateAnimator();
+    }
 
-        if (isGrounded && velocity.y < 0)
-            velocity.y = -2f; // mantenerlo pegado al suelo
+    void HandleMovement()
+    {
+        IsGrounded = controller.isGrounded;
 
-        // Movimiento según cámara
+        // Mantener pegado al suelo
+        if (IsGrounded && velocity.y < 0)
+            velocity.y = -2f;
+
+        // Input movimiento
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
-        Vector3 inputDir = new Vector3(horizontal, 0f, vertical).normalized;
+        Vector3 inputDirection = new Vector3(horizontal, 0f, vertical).normalized;
+        IsMoving = inputDirection.magnitude >= 0.1f;
 
-        if (inputDir.magnitude >= 0.1f)
+        Vector3 moveDirection = Vector3.zero;
+
+        if (IsMoving)
         {
-            // Calcula ángulo según la cámara
-            float targetAngle = Mathf.Atan2(inputDir.x, inputDir.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
-            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, rotationSpeed * Time.deltaTime);
-
-            // Gira el personaje
-            transform.rotation = Quaternion.Euler(0f, angle, 0f);
-
-            // Mueve según la dirección de la cámara
-            Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-            controller.Move(moveDir.normalized * speed * Time.deltaTime);
+            moveDirection = Quaternion.Euler(0f, cameraTransform.eulerAngles.y, 0f) * inputDirection;
+            bool isSprinting = Input.GetKey(KeyCode.LeftShift);
+            currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
         }
 
-        // Salto (con tecla Espacio)
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        // Salto
+        if (Input.GetButtonDown("Jump") && IsGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            animator.SetBool("isJumping", true);
         }
 
         // Aplicar gravedad
         velocity.y += gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
+
+        // Movimiento final
+        Vector3 finalMovement = (moveDirection * currentSpeed) * Time.deltaTime;
+        finalMovement.y += velocity.y * Time.deltaTime;
+        controller.Move(finalMovement);
+
+        // Reset salto al tocar suelo
+        if (IsGrounded && velocity.y < 0f)
+            animator.SetBool("isJumping", false);
+    }
+
+    void HandleRotation()
+    {
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        yaw += mouseX;
+
+        if (IsMoving)
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0f, yaw, 0f), rotationSpeed * Time.deltaTime);
+    }
+
+    void UpdateAnimator()
+    {
+        float speedPercent = IsMoving ? (currentSpeed == sprintSpeed ? 1f : 0.5f) : 0f;
+        animator.SetFloat("Speed", speedPercent, 0.1f, Time.deltaTime);
+        animator.SetBool("IsGrounded", IsGrounded);
+        animator.SetFloat("VerticalVelocity", velocity.y);
     }
 }
