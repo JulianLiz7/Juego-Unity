@@ -9,6 +9,10 @@ public class PlayerController : MonoBehaviour
     public float jumpHeight = 2f;
     public float gravity = -20f;
     public float rotationSpeed = 10f;
+<<<<<<< HEAD
+=======
+    public float mouseSensitivity = 1f;
+>>>>>>> a2541d0bfbd3fa12b02325e69536126a95f62ce8
 
     [Header("Referencias")]
     public Transform cameraTransform;
@@ -17,6 +21,10 @@ public class PlayerController : MonoBehaviour
     private CharacterController controller;
     private Vector3 velocity;
     private float currentSpeed;
+<<<<<<< HEAD
+=======
+    private float yaw;
+>>>>>>> a2541d0bfbd3fa12b02325e69536126a95f62ce8
 
     public bool IsGrounded { get; private set; }
     public bool IsMoving { get; private set; }
@@ -25,7 +33,10 @@ public class PlayerController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
+<<<<<<< HEAD
         Cursor.visible = false;
+=======
+>>>>>>> a2541d0bfbd3fa12b02325e69536126a95f62ce8
 
         if (cameraTransform == null)
             cameraTransform = Camera.main.transform;
@@ -42,9 +53,17 @@ public class PlayerController : MonoBehaviour
     {
         IsGrounded = controller.isGrounded;
 
+<<<<<<< HEAD
         if (IsGrounded && velocity.y < 0)
             velocity.y = -2f;
 
+=======
+        // Mantener pegado al suelo
+        if (IsGrounded && velocity.y < 0)
+            velocity.y = -2f;
+
+        // Input movimiento
+>>>>>>> a2541d0bfbd3fa12b02325e69536126a95f62ce8
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
         Vector3 inputDirection = new Vector3(horizontal, 0f, vertical).normalized;
@@ -66,6 +85,7 @@ public class PlayerController : MonoBehaviour
             animator.SetBool("isJumping", true);
         }
 
+<<<<<<< HEAD
         velocity.y += gravity * Time.deltaTime;
 
         Vector3 finalMovement = (moveDirection * currentSpeed) * Time.deltaTime;
@@ -73,12 +93,24 @@ public class PlayerController : MonoBehaviour
 
         controller.Move(finalMovement);
 
+=======
+        // Aplicar gravedad
+        velocity.y += gravity * Time.deltaTime;
+
+        // Movimiento final
+        Vector3 finalMovement = (moveDirection * currentSpeed) * Time.deltaTime;
+        finalMovement.y += velocity.y * Time.deltaTime;
+        controller.Move(finalMovement);
+
+        // Reset salto al tocar suelo
+>>>>>>> a2541d0bfbd3fa12b02325e69536126a95f62ce8
         if (IsGrounded && velocity.y < 0f)
             animator.SetBool("isJumping", false);
     }
 
     void HandleRotation()
     {
+<<<<<<< HEAD
         if (IsMoving)
         {
             // Rotar SOLO al moverse (Estilo Fortnite)
@@ -86,6 +118,13 @@ public class PlayerController : MonoBehaviour
             Quaternion targetRotation = Quaternion.LookRotation(forward);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
+=======
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        yaw += mouseX;
+
+        if (IsMoving)
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0f, yaw, 0f), rotationSpeed * Time.deltaTime);
+>>>>>>> a2541d0bfbd3fa12b02325e69536126a95f62ce8
     }
 
     void UpdateAnimator()
@@ -95,4 +134,8 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("IsGrounded", IsGrounded);
         animator.SetFloat("VerticalVelocity", velocity.y);
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> a2541d0bfbd3fa12b02325e69536126a95f62ce8
